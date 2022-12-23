@@ -18,6 +18,7 @@
     "eject": "react-scripts eject",
     "truffle-compile": "truffle compile",
     "truffle-migrate": "truffle migrate",
+    "truffle-migrate-reset": "truffle migrate --reset",
     "truffle-test": "truffle test",
     "truffle-console": "truffle console"
   },
