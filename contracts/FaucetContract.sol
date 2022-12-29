@@ -3,11 +3,22 @@ pragma solidity >=0.4.22 <0.9.0;
 
 contract FaucetContract {
     // Storage variables
+    address public owner;
     uint public numOfFunders;
     mapping(address => bool) private funders;
     mapping(uint => address) private lutFunders;
 
+    // Constructor
+    constructor() {
+        owner = msg.sender;
+    }
+
     // Modifiers
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Only owner can call this function.");
+        _;
+    }
+
     modifier onlyFunders() {
         require(funders[msg.sender], "You are not a funder");
         _;
@@ -31,7 +42,7 @@ contract FaucetContract {
         }
     }
 
-    function withdrawFunds(uint amount) external  limitWithdrawal(amount) {
+    function withdrawFunds(uint amount) external limitWithdrawal(amount) onlyOwner {
         payable(msg.sender).transfer(amount);
     }
 
@@ -45,6 +56,10 @@ contract FaucetContract {
 
     function getFunderAtIndex(uint8 index) external view returns (address) {
         return funders[index];
+    }
+
+    function transferOwnership(address newOwner) external onlyOwner {
+        owner = newOwner;
     }
 
     // Fallback function
