@@ -2,8 +2,9 @@
 pragma solidity >=0.4.22 <0.9.0;
 
 import "./Owned.sol";
+import "./Logger.sol";
 
-contract FaucetContract is Owned {
+contract FaucetContract is Owned, Logger {
     // Storage variables
     uint public numOfFunders;
     mapping(address => bool) private funders;
@@ -11,6 +12,11 @@ contract FaucetContract is Owned {
 
     // Constructor
     constructor() {}
+
+    // Abstract function implementation
+    function emitLog() public override pure returns (bytes32) {
+        return "FaucetContract: Log emitted.";
+    }
 
     // Modifiers
     modifier onlyFunders() {
