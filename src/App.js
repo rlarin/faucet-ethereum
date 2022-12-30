@@ -67,7 +67,6 @@ function App() {
   };
 
   useEffect(() => {
-    console.log('loadProvider');
     const loadProvider = async () => {
       const provider = await detectEthereumProvider();
       if (provider) {
