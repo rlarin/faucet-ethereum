@@ -86,12 +86,28 @@ function App() {
     }));
   }, [account.address, web3Api, getBalance]);
 
+  const withdrawFunds = useCallback(async () => {
+    const {
+      contract: { withdrawFunds: withdraw },
+      web3
+    } = web3Api;
+    const withdrawAmount = web3.utils.toWei('0.1', 'ether');
+    await withdraw(withdrawAmount, {
+      from: account.address
+    });
+    const balance = await getBalance('ether');
+    setAccount(prev => ({
+      ...prev,
+      balance
+    }));
+  }, [account.address, web3Api, getBalance]);
+
   const donateHandler = () => {
     return addFunds();
   };
 
   const withdrawHandler = () => {
-    console.log('Withdraw');
+    return withdrawFunds();
   };
 
   return (
