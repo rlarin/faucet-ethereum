@@ -4,6 +4,8 @@ import { useCallback, useEffect, useState } from 'react';
 import Web3 from 'web3';
 import detectEthereumProvider from '@metamask/detect-provider';
 import IconButton from './components/IconButton';
+import loadContract from './utils/loadContract';
+import { web3 } from '@truffle/contract/lib/contract/constructorMethods';
 
 function App() {
   const [account, setAccount] = useState({});
@@ -11,12 +13,13 @@ function App() {
 
   const connectWallet = useCallback(async () => {
     const { ethereum } = window;
-    const { web3 } = web3Api;
+    const { web3, contract } = web3Api;
     if (!ethereum) {
       alert('Get MetaMask!');
     } else {
       const currentAccounts = await ethereum.request({ method: 'eth_requestAccounts' });
-      const currentBalance = await web3.eth.getBalance(currentAccounts[0]);
+      const currentBalance = await web3.eth.getBalance(contract.address);
+
       return {
         address: currentAccounts[0],
         balance: web3.utils.fromWei(currentBalance, 'ether')
@@ -49,10 +52,13 @@ function App() {
   useEffect(() => {
     const loadProvider = async () => {
       const provider = await detectEthereumProvider();
+      const { instance: contract } = await loadContract('Faucet', provider);
+
       if (provider) {
         setWeb3Api({
           web3: new Web3(provider),
-          provider
+          provider,
+          contract
         });
       } else {
         alert('Please install MetaMask!');
@@ -62,8 +68,16 @@ function App() {
     loadProvider().then();
   }, []);
 
+  const addFunds = useCallback(async () => {
+    const {
+      contract: { addFunds },
+      web3
+    } = web3Api;
+    await addFunds({ from: account.address, value: web3.utils.toWei('1', 'ether') });
+  }, [account.address, web3Api]);
+
   const donateHandler = () => {
-    console.log('Donate');
+    return addFunds();
   };
 
   const withdrawHandler = () => {
@@ -102,7 +116,7 @@ function App() {
                 <IconButton
                   onClickHandler={donateHandler}
                   icon={faMoneyBill1}
-                  text="Donate"
+                  text="Donate 1 ETH"
                   color="is-info"
                 />
                 <IconButton
