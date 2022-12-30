@@ -1,10 +1,10 @@
 import './App.css';
-import { faMoneyBill1, faShareFromSquare, faIdCard } from '@fortawesome/free-regular-svg-icons';
 import { useCallback, useEffect, useState } from 'react';
 import Web3 from 'web3';
 import detectEthereumProvider from '@metamask/detect-provider';
-import IconButton from './components/IconButton';
 import loadContract from './utils/loadContract';
+import { faIdCard, faMoneyBill1, faShareFromSquare } from '@fortawesome/free-regular-svg-icons';
+import IconButton from './components/IconButton';
 
 function App() {
   const [account, setAccount] = useState({});
@@ -54,19 +54,49 @@ function App() {
     init().then();
   }, [connectWalletHandler]);
 
+  const setAccountListener = provider => {
+    provider.on('accountsChanged', accounts => {
+      setAccount(prev => ({
+        ...prev,
+        address: accounts[0]
+      }));
+    });
+    provider.on('chainChanged', chainId => {
+      console.log(chainId);
+    });
+  };
+
   useEffect(() => {
+    console.log('loadProvider');
     const loadProvider = async () => {
       const provider = await detectEthereumProvider();
-      const { instance: contract } = await loadContract('Faucet', provider);
-
       if (provider) {
-        setWeb3Api({
-          web3: new Web3(provider),
-          provider,
-          contract
-        });
+        const { instance: contract } = await loadContract('Faucet', provider);
+
+        if (provider) {
+          setAccountListener(provider);
+          setWeb3Api({
+            web3: new Web3(provider),
+            provider,
+            contract,
+            isProviderLoaded: true
+          });
+        } else {
+          setWeb3Api(prevState => {
+            return {
+              ...prevState,
+              isProviderLoaded: true
+            };
+          });
+          alert('Please install MetaMask!');
+        }
       } else {
-        alert('Please install MetaMask!');
+        setWeb3Api(prevState => {
+          return {
+            ...prevState,
+            isProviderLoaded: true
+          };
+        });
       }
     };
 
@@ -114,46 +144,67 @@ function App() {
     <div className="App faucet-wrapper container is-fluid">
       <div className="faucet">
         <div className="balance-view is-size-2">
-          {account.address ? (
-            <div className="content is-flex is-flex-direction-column is-justify-content-center is-align-content-center">
-              <div>
-                Current Balance: <strong>{account?.balance || 0}</strong>{' '}
-                <span className="is-size-5">ETH</span>
+          {!web3Api.isProviderLoaded && <div className={'button is-loading'}></div>}
+
+          {web3Api.isProviderLoaded && (
+            <div>
+              {account.address ? (
+                <div className="content is-flex is-flex-direction-column is-justify-content-center is-align-content-center">
+                  <div>
+                    Contract Balance: <strong>{account?.balance || 0}</strong>{' '}
+                    <span className="is-size-5">ETH</span>
+                  </div>
+                  <small className="has-text-centered is-size-5">
+                    <strong>Account:</strong> {account.address}
+                  </small>
+                </div>
+              ) : !web3Api?.provider ? (
+                <div className="content is-flex is-flex-direction-column is-justify-content-center is-align-content-center">
+                  <div className="notification is-warning is-rounded is-small is-flex is-flex-direction-column is-justify-content-center is-align-content-center">
+                    <h6 className={'is-size-5'}>Wallet not connected. Please install MetaMask!</h6>
+                    <a
+                      className={'is-size-5 has-text-link has-text-centered'}
+                      target={'_blank'}
+                      href={'https://metamask.io/download.html'}
+                      rel="noreferrer">
+                      Download MetaMask
+                    </a>
+                  </div>
+                </div>
+              ) : (
+                <div className="content is-justify-content-center is-align-content-center">
+                  No wallet connected
+                </div>
+              )}
+
+              <div className="buttons content is-justify-content-center is-align-content-center">
+                {!account.address && web3Api?.provider && (
+                  <IconButton
+                    onClickHandler={connectWalletHandler}
+                    icon={faIdCard}
+                    text="Connect Wallet"
+                    color="is-primary"
+                  />
+                )}
+                {account.address && (
+                  <>
+                    <IconButton
+                      onClickHandler={donateHandler}
+                      icon={faMoneyBill1}
+                      text="Donate 1 ETH"
+                      color="is-info"
+                    />
+                    <IconButton
+                      onClickHandler={withdrawHandler}
+                      icon={faShareFromSquare}
+                      text="Withdraw"
+                      color="is-success"
+                    />
+                  </>
+                )}
               </div>
-              <small className="has-text-centered is-size-5">Account: {account.address}</small>
-            </div>
-          ) : (
-            <div className="content is-justify-content-center is-align-content-center">
-              No wallet connected
             </div>
           )}
-
-          <div className="buttons content is-justify-content-center is-align-content-center">
-            {!account.address && (
-              <IconButton
-                onClickHandler={connectWalletHandler}
-                icon={faIdCard}
-                text="Connect Wallet"
-                color="is-primary"
-              />
-            )}
-            {account.address && (
-              <>
-                <IconButton
-                  onClickHandler={donateHandler}
-                  icon={faMoneyBill1}
-                  text="Donate 1 ETH"
-                  color="is-info"
-                />
-                <IconButton
-                  onClickHandler={withdrawHandler}
-                  icon={faShareFromSquare}
-                  text="Withdraw"
-                  color="is-success"
-                />
-              </>
-            )}
-          </div>
         </div>
       </div>
     </div>
