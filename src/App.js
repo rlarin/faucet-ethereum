@@ -5,27 +5,32 @@ import Web3 from 'web3';
 import detectEthereumProvider from '@metamask/detect-provider';
 import IconButton from './components/IconButton';
 import loadContract from './utils/loadContract';
-import { web3 } from '@truffle/contract/lib/contract/constructorMethods';
 
 function App() {
   const [account, setAccount] = useState({});
   const [web3Api, setWeb3Api] = useState({});
 
+  const getBalance = useCallback(
+    async unit => {
+      const { web3, contract } = web3Api;
+      return web3.utils.fromWei(await web3.eth.getBalance(contract.address), unit);
+    },
+    [web3Api]
+  );
+
   const connectWallet = useCallback(async () => {
     const { ethereum } = window;
-    const { web3, contract } = web3Api;
     if (!ethereum) {
       alert('Get MetaMask!');
     } else {
       const currentAccounts = await ethereum.request({ method: 'eth_requestAccounts' });
-      const currentBalance = await web3.eth.getBalance(contract.address);
-
+      const currentBalance = await getBalance('ether');
       return {
         address: currentAccounts[0],
-        balance: web3.utils.fromWei(currentBalance, 'ether')
+        balance: currentBalance
       };
     }
-  }, [web3Api]);
+  }, [getBalance]);
 
   const connectWalletHandler = useCallback(
     async (event = null) => {
@@ -74,7 +79,12 @@ function App() {
       web3
     } = web3Api;
     await addFunds({ from: account.address, value: web3.utils.toWei('1', 'ether') });
-  }, [account.address, web3Api]);
+    const balance = await getBalance('ether');
+    setAccount(prev => ({
+      ...prev,
+      balance
+    }));
+  }, [account.address, web3Api, getBalance]);
 
   const donateHandler = () => {
     return addFunds();
